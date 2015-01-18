@@ -423,6 +423,13 @@ public class SQDatabase {
         return ""
     }
     
+    /**
+    Change the journal_mode of the database
+    
+    :param: mode    A JournalMode case (.Delete, .Truncate, .Persist, .Memory, .WAL, .Off
+    
+    :returns:   True if journal_mode was successfully changed, false otherwise
+    */
     public func useJournalMode(mode: JournalMode) -> Bool {
         var sql = "PRAGMA journal_mode=\(mode.toString())"
         var errMsg: UnsafeMutablePointer<Int8> = nil
@@ -435,6 +442,9 @@ public class SQDatabase {
         return true
     }
     
+    /**
+    JournalMode options as specified at: https://sqlite.org/pragma.html#pragma_journal_mode
+    */
     public enum JournalMode {
         case Delete
         case Truncate

@@ -22,6 +22,8 @@
 // THE SOFTWARE.
 
 
+// MARK: SQPool
+
 public class SQPool {
     
     private let path: String?
@@ -44,15 +46,31 @@ public class SQPool {
         return queue
     }()
     
-    // Max number of connections to keep in the connection pool
-    // Note: this only limits the connections in the connPool array
+    /**
+    The maximum number of connections to be kept in the connection pool
+    
+    Note: this only limits the number of available connections in the connection pool.
+    Connections will be created as required and returned to the connection pool, or destroyed if the connection pool contains the maximum connection limit.
+    */
     public var maxSustainedConnections = 5
     
+    /**
+    Create an SQPool instance with the default path
+    
+    The default path is a file called "SwiftData.sqlite" in the "Library Driectory"
+    
+    :returns:   An initialized SQPool instance
+    */
     public init() {
         path = SQDatabase.defaultPath()
         useWALMode()
     }
     
+    /**
+    Create an SQPool instance with the specified path and flags
+    
+    :returns:   An initialized SQPool instance
+    */
     public init(path: String?, withFlags flags: SQDatabase.Flag) {
         self.path = path
         self.flags = flags
@@ -66,7 +84,7 @@ public class SQPool {
         inUsePool = [:]
     }
     
-    // Does not use the proper getConnection/releaseConnection
+    // Does not use the proper getConnection/releaseConnection - only meant for use in init()
     // Only call in init!
     private func useWALMode() -> Bool {
         let db = SQDatabase(path: path)
@@ -76,7 +94,7 @@ public class SQPool {
         return success
     }
     
-    // Obtain an SQDatabase object (already opened) from the connection pool,
+    // Obtain an SQDatabase object from the connection pool,
     // otherwise create a new connection
     private func getConnection() -> (Int, SQDatabase) {
         var db: SQDatabase?
@@ -115,6 +133,13 @@ public class SQPool {
         })
     }
     
+    /**
+    Execute a transaction
+    
+    :param: closure     A closure that accepts an SQDatabase instance that returns true to commit, or false to rollback
+    
+    :returns:   True if the transaction was successfully committed, false if rolled back
+    */
     public func transaction(closure: (SQDatabase)->Bool) -> Bool {
         
         var status = false
@@ -136,10 +161,25 @@ public class SQPool {
         return status
     }
     
+    /**
+    Execute a transaction asynchronously
+    
+    Note: This function will return immediately and the closure will run on a background thread.
+    
+    :param: closure     A closure that accepts an SQDatabase instance that returns true to commit, or false to rollback
+    */
     public func transactionAsync(closure: (SQDatabase)->Bool) {
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {let suc = self.transaction(closure)})
     }
     
+    /**
+    Execute a write (non-query) operation(s) on the database
+    
+    Note: write() should be used over read() if ANY operation in the closure is a non-query.
+    Otherwise, locked database errors can occur.
+    
+    :param: closure     A closure that accepts an SQDatabase instance to be used for non-query operations
+    */
     public func write(closure: (SQDatabase)->Void) {
         let (index, db) = getConnection()
         dispatch_sync(writeQueue, {
@@ -148,16 +188,44 @@ public class SQPool {
         releaseConnection(index)
     }
     
+    /**
+    Execute a write (non-query) operation(s) on the database asynchronously
+    
+    Note: write() should be used over read() if ANY operation in the closure is a non-query.
+    Otherwise, locked database errors can occur.
+    
+    This function will return immediately and the closure will run on a background thread.
+    
+    :param: closure     A closure that accepts an SQDatabase instance to be used for non-query operations
+    */
     public func writeAsync(closure: (SQDatabase)->Void) {
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {self.write(closure)})
     }
     
+    /**
+    Execute read (query) operations on the database
+    
+    Note: write() should be used over read() if ANY operation in the closure is a non-query.
+    Otherwise, locked database errors can occur.
+    
+    :param: closure     A closure that accepts an SQDatabase instance to be used for query operations
+    */
     public func read(closure: (SQDatabase)->Void) {
         let (index, db) = getConnection()
         closure(db)
         releaseConnection(index)
     }
     
+    /**
+    Execute read (query) operations on the database asynchronously
+    
+    Note: write() should be used over read() if ANY operation in the closure is a non-query.
+    Otherwise, locked database errors can occur.
+    
+    This function will return immediately and the closure will run on a background thread.
+    
+    :param: closure     A closure that accepts an SQDatabase instance to be used for query operations
+    */
     public func readAsync(closure: (SQDatabase)->Void) {
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {self.read(closure)})
     }
