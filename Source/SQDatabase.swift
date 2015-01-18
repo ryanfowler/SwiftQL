@@ -402,19 +402,25 @@ public class SQDatabase {
     /**
     Obtain the last error message
     
-    :returns:   An Optional String indicating the last error message
+    :returns:   A String indicating the last error message
     */
-    public func lastErrorMessage() -> String? {
-        return String.fromCString(sqlite3_errmsg(database))
+    public func lastErrorMessage() -> String {
+        if let mes = String.fromCString(sqlite3_errmsg(database)) {
+            return mes
+        }
+        return ""
     }
     
     /**
     Obtain the sqlite version
     
-    :returns:   An Optional String indicating the sqlite version
+    :returns:   A String indicating the sqlite version
     */
-    public func sqliteVersion() -> String? {
-        return String.fromCString(sqlite3_libversion())
+    public func sqliteVersion() -> String {
+        if let ver = String.fromCString(sqlite3_libversion()) {
+            return ver
+        }
+        return ""
     }
     
     
