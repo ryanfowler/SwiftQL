@@ -68,6 +68,15 @@ public class SQConnection {
     }
     
     /**
+    Execute functions within a closure asynchronously
+    
+    :param: closure     The closure that accepts an SQDatabase object to execute asynchronously
+    */
+    public func executeAsync(closure: (SQDatabase)->Void) {
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {self.execute(closure)})
+    }
+    
+    /**
     Execute a transaction
     
     :param: closure     The transaction closure that accepts an SQDatabase object and returns true to commit, or false to rollback
@@ -91,6 +100,15 @@ public class SQConnection {
         })
         
         return status
+    }
+    
+    /**
+    Execute a transaction asynchronously
+    
+    :param: closure     The transaction closure that accepts an SQDatabase object and returns true to commit, or false to rollback
+    */
+    public func transactionAsync(closure: (SQDatabase)->Bool) {
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {let suc = self.transaction(closure)})
     }
     
 }
