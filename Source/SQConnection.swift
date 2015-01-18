@@ -53,7 +53,7 @@ public class SQConnection {
     
     :returns:   An initialized SDConnection instance
     */
-    public init(path: String?, withFlags flags: SQDatabase.Flags) {
+    public init(path: String?, withFlags flags: SQDatabase.Flag) {
         database = SQDatabase(path: path)
         database.openWithFlags(flags)   // Consider making this a failable initializer
     }

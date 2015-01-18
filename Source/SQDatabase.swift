@@ -95,7 +95,7 @@ public class SQDatabase {
     
     :returns:   True if connection successfully opened with flags, false otherwise
     */
-    public func openWithFlags(flags: Flags) -> Bool {
+    public func openWithFlags(flags: Flag) -> Bool {
         
         if database != nil {
             close()
@@ -118,7 +118,7 @@ public class SQDatabase {
     Options are ReadOnly, ReadWrite, and ReadWriteCreate.
     Information at https://sqlite.org/c3ref/open.html
     */
-    public enum Flags {
+    public enum Flag {
         case ReadOnly
         case ReadWrite
         case ReadWriteCreate
@@ -421,6 +421,44 @@ public class SQDatabase {
             return ver
         }
         return ""
+    }
+    
+    public func useJournalMode(mode: JournalMode) -> Bool {
+        var sql = "PRAGMA journal_mode=\(mode.toString())"
+        var errMsg: UnsafeMutablePointer<Int8> = nil
+        let status = sqlite3_exec(database, sql, nil, nil, &errMsg)
+        if (status != SQLITE_OK && status != SQLITE_DONE) || errMsg != nil {
+            SQError.printSQLError("While changing to journaling mode: \(mode.toString())", errCode: status, errMsg: String.fromCString(errMsg))
+            sqlite3_free(errMsg)
+            return false
+        }
+        return true
+    }
+    
+    public enum JournalMode {
+        case Delete
+        case Truncate
+        case Persist
+        case Memory
+        case WAL
+        case Off
+        
+        private func toString() -> String {
+            switch self {
+            case .Delete:
+                return "DELETE"
+            case .Truncate:
+                return "TRUNCATE"
+            case .Persist:
+                return "PERSIST"
+            case .Memory:
+                return "MEMORY"
+            case .WAL:
+                return "WAL"
+            case .Off:
+                return "OFF"
+            }
+        }
     }
     
     
