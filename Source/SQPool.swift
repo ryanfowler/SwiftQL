@@ -10,9 +10,9 @@
 public class SQPool {
     
     private let path: String?
-    private let flags = SQDatabase.Flags.ReadWriteCreate
-    private var useID = 0
-    private var connPool: [SQDatabase] = []
+    private var connIndex = 1
+    private let flags = SQDatabase.Flag.ReadWriteCreate
+    private var connPool: [Int:SQDatabase] = [:]
     private var inUsePool: [Int:SQDatabase] = [:]
     
     // Queue for database write operations
@@ -22,12 +22,15 @@ public class SQPool {
         return queue
     }()
     // Queue for getting/releasing databases in pool
+    // To prevent weird behaviour from accessing properties from multiple threads
     private lazy var poolQueue: dispatch_queue_t = {
         [unowned self] in
         var queue = dispatch_queue_create("swiftdata.pool.conn.\(self)", DISPATCH_QUEUE_SERIAL)
         return queue
-        }()
+    }()
     
+    // Max number of connections to keep in the connection pool
+    // Note: this only limits the connections in the connPool array
     public var maxSustainedConnections = 5
     
     public init() {
@@ -35,60 +38,62 @@ public class SQPool {
         useWALMode()
     }
     
-    public init(path: String?, withFlags flags: SQDatabase.Flags) {
+    public init(path: String?, withFlags flags: SQDatabase.Flag) {
         self.path = path
         self.flags = flags
-        useWALMode()
+        if !useWALMode() {
+            SQError.printWarning("While opening an SQPool instance", next: "Cannot verify that the database is in WAL mode")
+        }
     }
     
     deinit {
-        useDeleteMode()
-        connPool = []
+        connPool = [:]
         inUsePool = [:]
     }
     
-    private func useWALMode() {
+    // Does not use the proper getConnection/releaseConnection
+    // Only call in init!
+    private func useWALMode() -> Bool {
         let db = SQDatabase(path: path)
         db.openWithFlags(flags)
-        db.query("PRAGMA journal_mode=WAL", withObjects: [])
-        connPool.append(db)
+        let success = db.useJournalMode(.WAL)
+        connPool[1] = db
+        return success
     }
     
-    private func useDeleteMode() {
-        let (index, db) = getConnection()
-        db.query("PRAGMA journal_mode=DELETE", withObjects: [])
-        releaseConnection(index)
-    }
-    
+    // Obtain an SQDatabase object (already opened) from the connection pool,
+    // otherwise create a new connection
     private func getConnection() -> (Int, SQDatabase) {
-        var index = 0
         var db: SQDatabase?
+        var index = 0
         dispatch_sync(poolQueue, {
-            self.useID++
-            index = self.useID
             if self.connPool.isEmpty {
+                self.connIndex++
                 let database = SQDatabase(path: self.path)
                 database.openWithFlags(self.flags)
-                self.inUsePool[self.useID] = database
-                println("Using new connection: \(self.useID)")
+                self.inUsePool[self.connIndex] = database
                 db = database
+                index = self.connIndex
                 return
             }
-            let database = self.connPool.removeLast()
-            self.inUsePool[self.useID] = database
-            println("Using connection: \(self.useID)")
-            db = database
-            return
+            for ind in self.connPool.keys {
+                let database = self.connPool.removeValueForKey(ind)!
+                self.inUsePool[ind] = database
+                db = database
+                index = ind
+                return
+            }
         })
         return (index, db!)
     }
     
+    // Release an SQDatabase object to the connection pool,
+    // or delete it if connPool is greater than the maxSustainedConnections
     private func releaseConnection(index: Int) {
         dispatch_sync(poolQueue, {
             if self.connPool.count < self.maxSustainedConnections {
-                println("Returning connection: \(index)")
                 let database = self.inUsePool.removeValueForKey(index)!
-                self.connPool.append(database)
+                self.connPool[index] = database
                 return
             }
             self.inUsePool[index] = nil
@@ -116,6 +121,10 @@ public class SQPool {
         return status
     }
     
+    public func transactionAsync(closure: (SQDatabase)->Bool) {
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {let suc = self.transaction(closure)})
+    }
+    
     public func write(closure: (SQDatabase)->Void) {
         let (index, db) = getConnection()
         dispatch_sync(writeQueue, {
@@ -124,10 +133,18 @@ public class SQPool {
         releaseConnection(index)
     }
     
+    public func writeAsync(closure: (SQDatabase)->Void) {
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {self.write(closure)})
+    }
+    
     public func read(closure: (SQDatabase)->Void) {
         let (index, db) = getConnection()
         closure(db)
         releaseConnection(index)
+    }
+    
+    public func readAsync(closure: (SQDatabase)->Void) {
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {self.read(closure)})
     }
     
 }
