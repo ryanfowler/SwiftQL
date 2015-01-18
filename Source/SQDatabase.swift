@@ -370,6 +370,54 @@ public class SQDatabase {
     }
     
     
+    // MARK: Misc
+    
+    /**
+    Obtain the last inserted row id
+    
+    :returns:   An Int64 of the last inserted row id
+    */
+    public func lastInsertId() -> Int64 {
+        return sqlite3_last_insert_rowid(database) as Int64
+    }
+    
+    /**
+    Obtain the number of rows modified by the last operation
+    
+    :returns:   An Int indicating the number of rows modified
+    */
+    public func rowsChanged() -> Int {
+        return Int(sqlite3_changes(database))
+    }
+    
+    /**
+    Obtain the last error code
+    
+    :returns:   An Int indicating the last error code
+    */
+    public func lastErrorCode() -> Int {
+        return Int(sqlite3_errcode(database))
+    }
+    
+    /**
+    Obtain the last error message
+    
+    :returns:   An Optional String indicating the last error message
+    */
+    public func lastErrorMessage() -> String? {
+        return String.fromCString(sqlite3_errmsg(database))
+    }
+    
+    /**
+    Obtain the sqlite version
+    
+    :returns:   An Optional String indicating the sqlite version
+    */
+    public func sqliteVersion() -> String? {
+        return String.fromCString(sqlite3_libversion())
+    }
+    
+    
     // MARK: Binding
     
     private func bindObject(obj: Any?, toStatement pStmt: COpaquePointer, withColumn col: Int32) {
