@@ -70,6 +70,8 @@ public class SQConnection {
     /**
     Execute functions within a closure asynchronously
     
+    Note: This function will return immediately and the closure will run on a background thread.
+    
     :param: closure     The closure that accepts an SQDatabase object to execute asynchronously
     */
     public func executeAsync(closure: (SQDatabase)->Void) {
@@ -104,6 +106,8 @@ public class SQConnection {
     
     /**
     Execute a transaction asynchronously
+    
+    Note: This function will return immediately and the closure will run on a background thread.
     
     :param: closure     The transaction closure that accepts an SQDatabase object and returns true to commit, or false to rollback
     */

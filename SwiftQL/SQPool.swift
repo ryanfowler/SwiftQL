@@ -133,45 +133,6 @@ public class SQPool {
     }
     
     /**
-    Execute a transaction
-    
-    :param: closure     A closure that accepts an SQDatabase instance that returns true to commit, or false to rollback
-    
-    :returns:   True if the transaction was successfully committed, false if rolled back
-    */
-    public func transaction(closure: (SQDatabase)->Bool) -> Bool {
-        
-        var status = false
-        let (index, db) = self.getConnection()
-        dispatch_sync(writeQueue, {
-            db.beginTransaction()
-            if closure(db) {
-                if db.commitTransaction() {
-                    status = true
-                } else {
-                    db.rollbackTransaction()
-                }
-            } else {
-                db.rollbackTransaction()
-            }
-        })
-        releaseConnection(index)
-        
-        return status
-    }
-    
-    /**
-    Execute a transaction asynchronously
-    
-    Note: This function will return immediately and the closure will run on a background thread.
-    
-    :param: closure     A closure that accepts an SQDatabase instance that returns true to commit, or false to rollback
-    */
-    public func transactionAsync(closure: (SQDatabase)->Bool) {
-        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {let suc = self.transaction(closure)})
-    }
-    
-    /**
     Execute a write (non-query) operation(s) on the database
     
     Note: write() should be used over read() if ANY operation in the closure is a non-query.
@@ -227,6 +188,45 @@ public class SQPool {
     */
     public func readAsync(closure: (SQDatabase)->Void) {
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {self.read(closure)})
+    }
+    
+    /**
+    Execute a transaction
+    
+    :param: closure     A closure that accepts an SQDatabase instance that returns true to commit, or false to rollback
+    
+    :returns:   True if the transaction was successfully committed, false if rolled back
+    */
+    public func transaction(closure: (SQDatabase)->Bool) -> Bool {
+        
+        var status = false
+        let (index, db) = self.getConnection()
+        dispatch_sync(writeQueue, {
+            db.beginTransaction()
+            if closure(db) {
+                if db.commitTransaction() {
+                    status = true
+                } else {
+                    db.rollbackTransaction()
+                }
+            } else {
+                db.rollbackTransaction()
+            }
+        })
+        releaseConnection(index)
+        
+        return status
+    }
+    
+    /**
+    Execute a transaction asynchronously
+    
+    Note: This function will return immediately and the closure will run on a background thread.
+    
+    :param: closure     A closure that accepts an SQDatabase instance that returns true to commit, or false to rollback
+    */
+    public func transactionAsync(closure: (SQDatabase)->Bool) {
+        dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {let suc = self.transaction(closure)})
     }
     
 }
