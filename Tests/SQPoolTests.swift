@@ -56,15 +56,6 @@ class SQPoolTests: XCTestCase {
     
     func testConcurrentWrites() {
         let pool = SQPool()
-        var success = pool.transaction({
-            db in
-            for var i = 0; i < 1000; i++ {
-                db.update("INSERT INTO test VALUES (?, ?, ?)", withObjects: [i, "Ryan", 24])
-            }
-            return true
-        })
-        XCTAssertTrue(success, "inserts should succeed in transaction")
-        
         let dGroup = dispatch_group_create()
         
         var success1 = false
@@ -199,6 +190,181 @@ class SQPoolTests: XCTestCase {
         XCTAssertEqual(idArr3.count, 1000, "read3 ids shoudl be 1000")
         XCTAssertEqual(nameArr3.count, 1000, "read3 names shoudl be 1000")
         XCTAssertEqual(ageArr3.count, 1000, "read3 ages shoudl be 1000")
+    }
+    
+    func testConcurrentReadWrites() {
+        let pool = SQPool()
+        let dGroup = dispatch_group_create()
+        
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+                XCTAssertNotNil(cursor, "cursor should not be nil")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.write({
+                db in
+                db.beginTransaction()
+                for var i = 0; i < 1000; i++ {
+                    db.update("INSERT INTO test VALUES (?, ?, ?)", withObjects: [i, "Ryan", 24])
+                }
+                let success = db.commitTransaction()
+                XCTAssertTrue(success, "transaction should successfully commit")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.write({
+                db in
+                db.beginTransaction()
+                for var i = 1000; i < 2000; i++ {
+                    db.update("INSERT INTO test VALUES (?, ?, ?)", withObjects: [i, "Ryan", 24])
+                }
+                let success = db.commitTransaction()
+                XCTAssertTrue(success, "transaction should successfully commit")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+                XCTAssertNotNil(cursor, "cursor should not be nil")
+            })
+        })
+        
+        dispatch_group_wait(dGroup, DISPATCH_TIME_FOREVER)
+        var idArr: [Int] = []
+        var nameArr: [String] = []
+        var ageArr: [Int] = []
+        
+        pool.read({
+            db in
+            if let cursor = db.query("SELECT * FROM test") {
+                while cursor.next() {
+                    idArr.append(cursor.intForColumnIndex(0)!)
+                    nameArr.append(cursor.stringForColumnIndex(1)!)
+                    ageArr.append(cursor.intForColumnIndex(0)!)
+                }
+            }
+        })
+        
+        XCTAssertEqual(idArr.count, 2000, "id array should have 2000 values")
+        XCTAssertEqual(nameArr.count, 2000, "name array should have 2000 values")
+        XCTAssertEqual(ageArr.count, 2000, "age array should have 2000 values")
+    }
+    
+    func testConcurrentWriteReads() {
+        let pool = SQPool()
+        let dGroup = dispatch_group_create()
+        
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.write({
+                db in
+                db.beginTransaction()
+                for var i = 0; i < 1000; i++ {
+                    db.update("INSERT INTO test VALUES (?, ?, ?)", withObjects: [i, "Ryan", 24])
+                }
+                let success = db.commitTransaction()
+                XCTAssertTrue(success, "transaction should successfully commit")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+                XCTAssertNotNil(cursor, "cursor should not be nil")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.write({
+                db in
+                db.beginTransaction()
+                for var i = 1000; i < 2000; i++ {
+                    db.update("INSERT INTO test VALUES (?, ?, ?)", withObjects: [i, "Ryan", 24])
+                }
+                let success = db.commitTransaction()
+                XCTAssertTrue(success, "transaction should successfully commit")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+                XCTAssertNotNil(cursor, "cursor should not be nil")
+            })
+        })
+        
+        dispatch_group_wait(dGroup, DISPATCH_TIME_FOREVER)
+        var idArr: [Int] = []
+        var nameArr: [String] = []
+        var ageArr: [Int] = []
+        
+        pool.read({
+            db in
+            if let cursor = db.query("SELECT * FROM test") {
+                while cursor.next() {
+                    idArr.append(cursor.intForColumnIndex(0)!)
+                    nameArr.append(cursor.stringForColumnIndex(1)!)
+                    ageArr.append(cursor.intForColumnIndex(0)!)
+                }
+            }
+        })
+        
+        XCTAssertEqual(idArr.count, 2000, "id array should have 2000 values")
+        XCTAssertEqual(nameArr.count, 2000, "name array should have 2000 values")
+        XCTAssertEqual(ageArr.count, 2000, "age array should have 2000 values")
+    }
+    
+    func testMaxSustainedConnectionLimit() {
+        let pool = SQPool()
+        let dGroup = dispatch_group_create()
+        
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+            })
+        })
+        dispatch_group_async(dGroup, dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), {
+            pool.read({
+                db in
+                let cursor = db.query("SELECT * FROM test")
+            })
+        })
+        dispatch_group_wait(dGroup, DISPATCH_TIME_FOREVER)
+        println(pool.numberOfFreeConnections())
+        XCTAssertLessThan(pool.numberOfFreeConnections(), 6, "should be less than 6 connections open")
     }
     
 }
