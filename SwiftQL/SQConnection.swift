@@ -28,10 +28,7 @@ import Foundation
 public class SQConnection {
     
     private var database: SQDatabase
-    private lazy var databaseQueue: dispatch_queue_t = {
-        [unowned self] in
-        return dispatch_queue_create("swiftql.connection.\(self)", DISPATCH_QUEUE_SERIAL)
-    }()
+    private var databaseQueue = dispatch_queue_create("swiftql.connection", DISPATCH_QUEUE_SERIAL)
     
     /**
     Create an SQConnection instance with the default path

@@ -34,18 +34,11 @@ public class SQPool {
     private var inUsePool: [Int:SQDatabase] = [:]
     
     // Queue for database write operations
-    private lazy var writeQueue: dispatch_queue_t = {
-        [unowned self] in
-        var queue = dispatch_queue_create("swiftql.write", DISPATCH_QUEUE_SERIAL)
-        return queue
-    }()
+    private var writeQueue = dispatch_queue_create("swiftql.write", DISPATCH_QUEUE_SERIAL)
+    
     // Queue for getting/releasing databases in pool
     // To prevent weird behaviour from accessing properties from multiple threads
-    private lazy var poolQueue: dispatch_queue_t = {
-        [unowned self] in
-        var queue = dispatch_queue_create("swiftql.pool", DISPATCH_QUEUE_SERIAL)
-        return queue
-    }()
+    private var poolQueue = dispatch_queue_create("swiftql.pool", DISPATCH_QUEUE_SERIAL)
     
     /**
     The maximum number of connections to be kept in the connection pool
@@ -54,6 +47,15 @@ public class SQPool {
     Connections will be created as required and returned to the connection pool, or destroyed if the connection pool contains the maximum connection limit.
     */
     public var maxSustainedConnections = 5
+    
+    /**
+    Returns the number of idle connections
+    
+    Note: Will always be less than or equal to maxSustainedConnections
+    */
+    public func numberOfFreeConnections() -> Int {
+        return connPool.count
+    }
     
     /**
     Create an SQPool instance with the default path
