@@ -74,9 +74,7 @@ public class SQPool {
     public init(path: String?, withFlags flags: SQDatabase.Flag) {
         self.path = path
         self.flags = flags
-        if !useWALMode() {
-            SQError.printWarning("While opening an SQPool instance", next: "Cannot verify that the database is in WAL mode")
-        }
+        useWALMode()
     }
     
     deinit {
@@ -86,12 +84,13 @@ public class SQPool {
     
     // Does not use the proper getConnection/releaseConnection - only meant for use in init()
     // Only call in init!
-    private func useWALMode() -> Bool {
+    private func useWALMode() {
         let db = SQDatabase(path: path)
         db.openWithFlags(flags)
-        let success = db.useJournalMode(.WAL)
+        if !db.useJournalMode(.WAL) {
+            SQError.printWarning("While opening an SQPool instance", next: "Cannot verify that the database is in WAL mode")
+        }
         connPool[1] = db
-        return success
     }
     
     // Obtain an SQDatabase object from the connection pool,
