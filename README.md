@@ -5,7 +5,7 @@ SQLite Handling for iOS and OS X in Swift
 
 SwiftQL is a simple wrapper around the SQLite C API written completely in Swift.
 
-It’s the result of lessons learned with [SwiftData](https://github.com/ryanfowler/SwiftData), with syntax and functionality inspired by the famous [FMDB](https://github.com/ccgus/fmdb) by Gus Mueller.
+This library is the result of lessons learned with [SwiftData](https://github.com/ryanfowler/SwiftData), with syntax inspired by the famous [FMDB](https://github.com/ccgus/fmdb) by Gus Mueller.
 
 
 ## Installation
@@ -36,22 +36,21 @@ In the meantime, check out some sample usage below.
 
 The public SwiftQL classes are:
 
-**[SQDatabase](#SQDatabase)**
+**[SQDatabase](#sqdatabase)**
 - the basic database class
 - for use on a single thread only
 
-**[SQCursor](#SQCursor)**
+**[SQCursor](#sqcursor)**
 - created by a query on an SQDatabase
-- used to iterate through returned results from a query
+- used to iterate through returned rows from a query
 
-**[SQConnection](#SQConnection)**
+**[SQConnection](#sqconnection)**
 - a single database connection class
 - safe for use on multiple threads
 - all operations are executed in a FIFO order
 
-**[SQPool](#SQPool)**
+**[SQPool](#sqpool)**
 - a database pool class
-- safe for use on multiple threads
 - uses WAL journaling mode to allow for concurrent reading and writing on multiple threads
 
 ### SQDatabase
