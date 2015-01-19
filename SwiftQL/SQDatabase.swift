@@ -32,13 +32,13 @@ public class SQDatabase {
     
     class func defaultPath() -> String {
         let libPath = NSSearchPathForDirectoriesInDomains(.LibraryDirectory, .UserDomainMask, true)[0] as String
-        return libPath.stringByAppendingPathComponent("SwiftData.sqlite")
+        return libPath.stringByAppendingPathComponent("SwiftQL.sqlite")
     }
 
     /**
     Create an SQDatabase instance with the default path
     
-    The default path is a file called "SwiftData.sqlite" in the "Library Driectory"
+    The default path is a file called "SwiftQL.sqlite" in the "Library Driectory"
     
     :returns:   An initialized SQDatabase instance
     */

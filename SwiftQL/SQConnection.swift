@@ -29,13 +29,13 @@ public class SQConnection {
     private var database: SQDatabase
     private lazy var databaseQueue: dispatch_queue_t = {
         [unowned self] in
-        return dispatch_queue_create("swiftdata.connection.\(self)", DISPATCH_QUEUE_SERIAL)
+        return dispatch_queue_create("swiftql.connection.\(self)", DISPATCH_QUEUE_SERIAL)
     }()
     
     /**
     Create an SQConnection instance with the default path
     
-    The default path is a file called "SwiftData.sqlite" in the "Library Driectory"
+    The default path is a file called "SwiftQL.sqlite" in the "Library Driectory"
     
     :returns:   An initialized SDConnection instance
     */

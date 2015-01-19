@@ -134,12 +134,12 @@ To iterate through the result rows and obtain column values:
 ```swift
 if let cursor = db.query(“SELECT * FROM test”) {
     while cursor.next() {
-	if let id = cursor.intForColumnIndex(1) {
-	    // column value exists
-	}
-	if let val = cursor.stringForColumnIndex(2) {
-	    // column value exists
-	}
+        if let id = cursor.intForColumnIndex(1) {
+            // column value exists
+        }
+        if let val = cursor.stringForColumnIndex(2) {
+            // column value exists
+        }
     }
 }
 ```
@@ -149,12 +149,12 @@ Alternatively, you can obtain column values by name:
 ```swift
 if let cursor = db.query(“SELECT * FROM test”) {
     while cursor.next() {
-	if let id = cursor.intForColumn(“id”) {
-	    // column value exists
-	}
-	if let val = cursor.stringForColumn(“val”) {
-	    // column value exists
-	}
+        if let id = cursor.intForColumn(“id”) {
+            // column value exists
+        }
+        if let val = cursor.stringForColumn(“val”) {
+            // column value exists
+        }
     }
 }
 ```

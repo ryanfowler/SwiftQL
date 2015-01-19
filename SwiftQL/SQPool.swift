@@ -35,14 +35,14 @@ public class SQPool {
     // Queue for database write operations
     private lazy var writeQueue: dispatch_queue_t = {
         [unowned self] in
-        var queue = dispatch_queue_create("swiftdata.pool.\(self)", DISPATCH_QUEUE_SERIAL)
+        var queue = dispatch_queue_create("swiftql.pool.\(self)", DISPATCH_QUEUE_SERIAL)
         return queue
     }()
     // Queue for getting/releasing databases in pool
     // To prevent weird behaviour from accessing properties from multiple threads
     private lazy var poolQueue: dispatch_queue_t = {
         [unowned self] in
-        var queue = dispatch_queue_create("swiftdata.pool.conn.\(self)", DISPATCH_QUEUE_SERIAL)
+        var queue = dispatch_queue_create("swiftql.pool.conn.\(self)", DISPATCH_QUEUE_SERIAL)
         return queue
     }()
     
@@ -57,7 +57,7 @@ public class SQPool {
     /**
     Create an SQPool instance with the default path
     
-    The default path is a file called "SwiftData.sqlite" in the "Library Driectory"
+    The default path is a file called "SwiftQL.sqlite" in the "Library Driectory"
     
     :returns:   An initialized SQPool instance
     */
