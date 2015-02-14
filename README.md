@@ -128,7 +128,7 @@ if let cursor = db.query(“SELECT * FROM test”) {
 
 ### SQCursor
 
-In the queries above, an Optional SQCursor is returned. 
+In the queries above, an Optional SQCursor is returned.
 To iterate through the result rows and obtain column values:
 
 ```swift
@@ -161,7 +161,44 @@ if let cursor = db.query(“SELECT * FROM test”) {
 
 ### SQConnection
 
-Documentation coming soon!
+An SQConnection object is a safe means of accessing a single SQLite database from multiple threads.
+
+Create an SQDatabase instance using either:
+
+```swift
+let conn = SQConnection()
+// uses the database “SwiftData.sqlite” located in the Library Directory
+```
+or
+```swift
+let customPath = // path to your database
+let conn = SQConnection(path: customPath)
+// uses the database specified at customPath
+```
+
+To execute SQL statements, use the execute function.
+It accepts a closure that is provided an SQDatabase instance.
+Database operations can then be performed using the supplied SQDatabase:
+
+```swift
+conn.execute({
+    db in
+    // db is an SQDatabase instance
+})
+```
+
+To execute SQL statements asynchronously, the executeAsync function may be used:
+
+```swift
+conn.executeAsync({
+    db in
+    // use db
+})
+```
+
+This function will return immediately and execute the provided closure on another thread.
+
+It should be noted that the provided SQDatabase instance is not thread safe itself, meaning that it should only be used in the closure it is provided to!
 
 ### SQPool
 
