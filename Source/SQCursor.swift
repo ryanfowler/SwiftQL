@@ -97,6 +97,12 @@ public class SQCursor {
     public func intForColumn(name: String) -> Int? {
         return intForColumnIndex(columnIndexForName(name))
     }
+    public func int32ForColumn(name: String) -> Int32? {
+        return int32ForColumnIndex(columnIndexForName(name))
+    }
+    public func int64ForColumn(name: String) -> Int64? {
+        return int64ForColumnIndex(columnIndexForName(name))
+    }
     public func doubleForColumn(name: String) -> Double? {
         return doubleForColumnIndex(columnIndexForName(name))
     }
@@ -117,7 +123,19 @@ public class SQCursor {
         if index < 0 || sqlite3_column_type(pStmt, index) == SQLITE_NULL {
             return nil
         }
-        return Int(sqlite3_column_int(pStmt, index))
+        return Int(sqlite3_column_int64(pStmt, index))
+    }
+    public func int32ForColumnIndex(index: Int32) -> Int32? {
+        if index < 0 || sqlite3_column_type(pStmt, index) == SQLITE_NULL {
+            return nil
+        }
+        return sqlite3_column_int(pStmt, index)
+    }
+    public func int64ForColumnIndex(index: Int32) -> Int64? {
+        if index < 0 || sqlite3_column_type(pStmt, index) == SQLITE_NULL {
+            return nil
+        }
+        return Int64(sqlite3_column_int64(pStmt, index))
     }
     public func doubleForColumnIndex(index: Int32) -> Double? {
         if index < 0 || sqlite3_column_type(pStmt, index) == SQLITE_NULL {

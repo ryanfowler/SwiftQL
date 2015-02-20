@@ -444,7 +444,7 @@ public class SQDatabase {
     }
     
     /**
-    JournalMode options as specified at: https://sqlite.org/pragma.html#pragma_journal_mode
+    Journal mode options as specified at: https://sqlite.org/pragma.html#pragma_journal_mode
     */
     public enum JournalMode {
         case Delete
@@ -480,8 +480,12 @@ public class SQDatabase {
         switch obj {
         case let val as String:
             sqlite3_bind_text(pStmt, col, val, -1, SQLITE_TRANSIENT)
+        case let val as Int64:
+            sqlite3_bind_int64(pStmt, col, val)
         case let val as Int:
-            sqlite3_bind_int(pStmt, col, Int32(val))
+            sqlite3_bind_int64(pStmt, col, Int64(val))
+        case let val as Int32:
+            sqlite3_bind_int(pStmt, col, val)
         case let val as Double:
             sqlite3_bind_double(pStmt, col, val)
         case let val as Bool:
